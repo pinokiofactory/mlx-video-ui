@@ -3,4 +3,5 @@ mlx-video/
 mlx-video.blaizzy-*/
 logs/
 cache/
+.claude/
 .DS_Store
