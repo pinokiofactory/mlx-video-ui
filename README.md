@@ -12,11 +12,9 @@ This folder contains Pinokio launcher scripts for the MLX Video UI.
 - `start.js`: start backend + frontend together (auto-picks free ports if defaults are taken)
 - `update.js`: `git pull` + reinstall deps
 - `reset.js`: remove `app/` and `mlx-video/`
-- `keys.js`: optional Hugging Face / Civitai keys (writes to `ENVIRONMENT`)
+- `keys.js`: optional Hugging Face / Civitai keys (stores secrets in `ENVIRONMENT.local`)
 
 ## Notes
 - Frontend is started with `NEXT_PUBLIC_API_BASE` pointing at the selected backend URL.
 - `start.js` writes `local.url` so the Pinokio menu can open the UI automatically.
-- Optional tokens can be set in `ENVIRONMENT`:
-  - `HF_TOKEN` (Hugging Face)
-  - `CIVITAI_API_KEY` (Civitai)
+- Optional tokens can be set via `keys.js`. They are written to `ENVIRONMENT.local` (untracked).
