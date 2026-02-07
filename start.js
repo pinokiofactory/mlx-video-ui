@@ -46,9 +46,36 @@ module.exports = {
       },
     },
     {
-      // Safety net: if mlx-video env isn't present yet, bootstrap it so the backend
-      // can call `mlx_video.generate` successfully.
-      when: "{{!exists('mlx-video/.venv/bin/python') && !exists('mlx-video/.venv/bin/python3')}}",
+      // Ensure `mlx_video` is importable from `mlx-video/.venv` before we start the API.
+      // This avoids the backend falling back to its own venv (and then failing with
+      // ModuleNotFoundError: No module named 'mlx_video').
+      method: async (req, ondata, kernel) => {
+        const fs = require("fs");
+        const path = require("path");
+        const { spawnSync } = require("child_process");
+
+        const pyCandidates = [
+          path.join(req.cwd, "mlx-video", ".venv", "bin", "python"),
+          path.join(req.cwd, "mlx-video", ".venv", "bin", "python3"),
+        ];
+        const py = pyCandidates.find((p) => fs.existsSync(p));
+        if (!py) {
+          ondata({ raw: "\nmlx-video/.venv python missing; will bootstrap env.\n" });
+          return { needsInstall: true, reason: "missing-python" };
+        }
+
+        const res = spawnSync(py, ["-c", "import mlx_video"], { stdio: "ignore" });
+        if (!res || res.status !== 0) {
+          ondata({ raw: "\nmlx_video import failed; will (re)install in mlx-video/.venv.\n" });
+          return { needsInstall: true, reason: "import-failed" };
+        }
+
+        ondata({ raw: "\nmlx_video import OK.\n" });
+        return { needsInstall: false };
+      },
+    },
+    {
+      when: "{{input.needsInstall}}",
       method: "shell.run",
       params: {
         path: "mlx-video",
@@ -56,7 +83,7 @@ module.exports = {
           path: ".venv",
           python: "python=3.11",
         },
-        message: "python -m pip install -e .",
+        message: "python -m pip install -e . && python -c \"import mlx_video; print('mlx_video ok')\"",
       },
     },
     {
@@ -64,7 +91,12 @@ module.exports = {
       params: {
         path: "app/backend",
         venv: ".venv",
-        env: { PYTHONUNBUFFERED: "1" },
+        env: {
+          PYTHONUNBUFFERED: "1",
+          // Pass tokens through to the backend + generator subprocesses.
+          HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
+          CIVITAI_API_KEY: "{{envs.CIVITAI_API_KEY || ''}}",
+        },
         message: "uvicorn main:app --host 127.0.0.1 --port {{local.backend_port}}",
         on: [{
           // Wait until the server is bound and serving.

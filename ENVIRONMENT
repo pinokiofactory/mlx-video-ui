@@ -93,3 +93,26 @@ PINOKIO_SHARE_LOCAL=false
 #
 ##########################################################################
 PINOKIO_SHARE_LOCAL_PORT=
+
+##########################################################################
+#
+# HF_TOKEN
+#
+# Optional Hugging Face access token.
+# - Needed for downloading private models
+# - Helps avoid rate limits on public downloads
+#
+# If you logged into Hugging Face via Pinokio "Login with localhost",
+# Pinokio may auto-inject HF_TOKEN for you.
+#
+##########################################################################
+HF_TOKEN=
+
+##########################################################################
+#
+# CIVITAI_API_KEY
+#
+# Optional Civitai API key (for downloading LoRAs/models from Civitai).
+#
+##########################################################################
+CIVITAI_API_KEY=

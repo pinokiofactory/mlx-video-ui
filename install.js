@@ -32,7 +32,7 @@ module.exports = {
           path: ".venv",
           python: "python=3.11"
         },
-        message: "python -m pip install -e ."
+        message: "python -m pip install -e . && python -c \"import mlx_video; print('mlx_video ok')\""
       }
     },
     {

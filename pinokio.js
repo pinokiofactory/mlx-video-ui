@@ -32,6 +32,10 @@ module.exports = {
             icon: "fa-solid fa-terminal",
             text: "Terminal",
             href: "start.js",
+          }, {
+            icon: "fa-solid fa-key",
+            text: "API Keys",
+            href: "keys.js",
           }]
         } else {
           return [{
@@ -39,6 +43,10 @@ module.exports = {
             icon: "fa-solid fa-terminal",
             text: "Terminal",
             href: "start.js",
+          }, {
+            icon: "fa-solid fa-key",
+            text: "API Keys",
+            href: "keys.js",
           }]
         }
       } else if (running.update) {
@@ -47,6 +55,10 @@ module.exports = {
           icon: "fa-solid fa-terminal",
           text: "Updating",
           href: "update.js",
+        }, {
+          icon: "fa-solid fa-key",
+          text: "API Keys",
+          href: "keys.js",
         }]
       } else if (running.reset) {
         return [{
@@ -54,6 +66,10 @@ module.exports = {
           icon: "fa-solid fa-terminal",
           text: "Resetting",
           href: "reset.js",
+        }, {
+          icon: "fa-solid fa-key",
+          text: "API Keys",
+          href: "keys.js",
         }]
       } else {
         return [{
@@ -70,6 +86,10 @@ module.exports = {
           text: "Install",
           href: "install.js",
         }, {
+          icon: "fa-solid fa-key",
+          text: "API Keys",
+          href: "keys.js",
+        }, {
           icon: "fa-regular fa-circle-xmark",
           text: "Reset",
           href: "reset.js",
@@ -81,6 +101,10 @@ module.exports = {
         icon: "fa-solid fa-plug",
         text: "Install",
         href: "install.js",
+      }, {
+        icon: "fa-solid fa-key",
+        text: "API Keys",
+        href: "keys.js",
       }]
     }
   }
