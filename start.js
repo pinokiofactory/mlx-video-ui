@@ -46,6 +46,20 @@ module.exports = {
       },
     },
     {
+      // Safety net: if mlx-video env isn't present yet, bootstrap it so the backend
+      // can call `mlx_video.generate` successfully.
+      when: "{{!exists('mlx-video/.venv/bin/python') && !exists('mlx-video/.venv/bin/python3')}}",
+      method: "shell.run",
+      params: {
+        path: "mlx-video",
+        conda: {
+          path: ".venv",
+          python: "python=3.11",
+        },
+        message: "python -m pip install -e .",
+      },
+    },
+    {
       method: "shell.run",
       params: {
         path: "app/backend",
@@ -84,8 +98,9 @@ module.exports = {
     {
       method: "local.set",
       params: {
-        ui_url: "{{(input.event && input.event[1]) ? input.event[1] : ('http://127.0.0.1:' + local.frontend_port)}}",
-        url: "{{(input.event && input.event[1]) ? input.event[1] : ('http://127.0.0.1:' + local.frontend_port)}}",
+        // Do not rely on parsing Next output (it can include formatting characters).
+        ui_url: "{{'http://127.0.0.1:' + local.frontend_port}}",
+        url: "{{'http://127.0.0.1:' + local.frontend_port}}",
       }
     },
   ]
