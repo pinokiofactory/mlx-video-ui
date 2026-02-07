@@ -1,0 +1,11 @@
+{
+  "title": "MLX Video UI",
+  "description": "Local UI for MLX Video (Next.js frontend + FastAPI backend).",
+  "icon": "icon.png",
+  "links": [
+    {
+      "title": "Repository",
+      "value": "https://github.com/CharafChnioune/mlx-video-UI.git"
+    }
+  ]
+}

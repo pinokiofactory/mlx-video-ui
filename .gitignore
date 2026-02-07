@@ -1,0 +1,6 @@
+app/
+mlx-video/
+mlx-video.blaizzy-*/
+logs/
+cache/
+.DS_Store
