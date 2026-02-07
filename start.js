@@ -96,6 +96,10 @@ module.exports = {
           // Pass tokens through to the backend + generator subprocesses.
           HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
           CIVITAI_API_KEY: "{{envs.CIVITAI_API_KEY || ''}}",
+          // Hugging Face Hub download tuning (optional).
+          HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
+          HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
+          LTX_NO_DOWNLOAD_PROGRESS: "{{envs.LTX_NO_DOWNLOAD_PROGRESS || '0'}}",
         },
         message: "uvicorn main:app --host 127.0.0.1 --port {{local.backend_port}}",
         on: [{
