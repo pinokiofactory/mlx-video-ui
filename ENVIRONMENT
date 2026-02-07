@@ -116,3 +116,34 @@ HF_TOKEN=
 #
 ##########################################################################
 CIVITAI_API_KEY=
+
+##########################################################################
+#
+# HF_XET_HIGH_PERFORMANCE
+#
+# Hugging Face Hub downloads are powered by hf-xet; enabling high-performance
+# mode can improve throughput for large model snapshots.
+#
+# Set to 0 to disable.
+#
+##########################################################################
+HF_XET_HIGH_PERFORMANCE=1
+
+##########################################################################
+#
+# HF_HUB_MAX_WORKERS
+#
+# Hugging Face Hub concurrent file download threads (snapshot_download).
+# 8 is the upstream default. Increase if your network can handle it.
+#
+##########################################################################
+HF_HUB_MAX_WORKERS=8
+
+##########################################################################
+#
+# LTX_NO_DOWNLOAD_PROGRESS
+#
+# Set to 1 to silence Hugging Face download progress bars in Pinokio logs.
+#
+##########################################################################
+LTX_NO_DOWNLOAD_PROGRESS=0
