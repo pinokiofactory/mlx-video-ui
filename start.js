@@ -93,6 +93,9 @@ module.exports = {
         venv: ".venv",
         env: {
           PYTHONUNBUFFERED: "1",
+          // Ensure ffmpeg/ffprobe are available for muxing audio and higher-quality encoding.
+          // (Pinokio conda + venv activation may drop Homebrew from PATH.)
+          PATH: "{{(envs.PATH || '') + ':/opt/homebrew/bin:/usr/local/bin'}}",
           // Pass tokens through to the backend + generator subprocesses.
           HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
           HUGGINGFACE_HUB_TOKEN: "{{envs.HF_TOKEN || ''}}",
@@ -135,7 +138,7 @@ module.exports = {
     {
       method: "local.set",
       params: {
-        // Do not rely on parsing Next output (it can include formatting characters).
+        // Build UI URL directly from the selected port (avoid fragile parsing/regex).
         ui_url: "{{'http://127.0.0.1:' + local.frontend_port}}",
         url: "{{'http://127.0.0.1:' + local.frontend_port}}",
       }
