@@ -87,32 +87,6 @@ module.exports = {
       },
     },
     {
-      // Load secrets from ENVIRONMENT.local (untracked) if present.
-      method: async (req, ondata, kernel) => {
-        const fs = require("fs");
-        const path = require("path");
-
-        const p = path.resolve(req.cwd, "ENVIRONMENT.local");
-        if (!fs.existsSync(p)) return {};
-
-        const text = fs.readFileSync(p, "utf8");
-        const out = {};
-        for (const line of text.split(/\r?\n/)) {
-          const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-          if (!m) continue;
-          out[m[1]] = m[2] ?? "";
-        }
-        return out;
-      },
-    },
-    {
-      method: "local.set",
-      params: {
-        hf_token: "{{input.HF_TOKEN || ''}}",
-        civitai_api_key: "{{input.CIVITAI_API_KEY || ''}}",
-      },
-    },
-    {
       method: "shell.run",
       params: {
         path: "app/backend",
@@ -120,8 +94,9 @@ module.exports = {
         env: {
           PYTHONUNBUFFERED: "1",
           // Pass tokens through to the backend + generator subprocesses.
-          HF_TOKEN: "{{local.hf_token || envs.HF_TOKEN || ''}}",
-          CIVITAI_API_KEY: "{{local.civitai_api_key || envs.CIVITAI_API_KEY || ''}}",
+          HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
+          HUGGINGFACE_HUB_TOKEN: "{{envs.HF_TOKEN || ''}}",
+          CIVITAI_API_KEY: "{{envs.CIVITAI_API_KEY || ''}}",
           // Hugging Face Hub download tuning (optional).
           HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
           HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
