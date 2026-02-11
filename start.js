@@ -95,7 +95,15 @@ module.exports = {
           PYTHONUNBUFFERED: "1",
           // Ensure ffmpeg/ffprobe are available for muxing audio and higher-quality encoding.
           // (Pinokio conda + venv activation may drop Homebrew from PATH.)
-          PATH: "{{(envs.PATH || '') + ':/opt/homebrew/bin:/usr/local/bin'}}",
+          PATH: [
+            "{{envs.PATH || ''}}",
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+          ],
+          // Force all HF downloads/caches into this Pinokio project folder so installs are
+          // deterministic and we don't accidentally pick up incomplete global caches.
+          HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
+          HF_HUB_CACHE: "{{path.resolve(cwd, 'cache', 'HF_HOME', 'hub')}}",
           // Pass tokens through to the backend + generator subprocesses.
           HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
           HUGGINGFACE_HUB_TOKEN: "{{envs.HF_TOKEN || ''}}",
@@ -104,6 +112,10 @@ module.exports = {
           HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
           HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
           LTX_NO_DOWNLOAD_PROGRESS: "{{envs.LTX_NO_DOWNLOAD_PROGRESS || '0'}}",
+          // The "streaming mp4" path uses OpenCV VideoWriter which is flaky on macOS
+          // (can produce corrupted/static frames). We keep stream mode for preview/progress,
+          // but default to final ffmpeg encoding for correctness.
+          MLX_VIDEO_STREAM_MP4: "{{envs.MLX_VIDEO_STREAM_MP4 || '0'}}",
         },
         message: "uvicorn main:app --host 127.0.0.1 --port {{local.backend_port}}",
         on: [{
