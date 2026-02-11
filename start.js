@@ -46,6 +46,98 @@ module.exports = {
       },
     },
     {
+      // Resolve HF/Civitai tokens from ENVIRONMENT first, then local token files as fallback.
+      method: async (req, ondata, kernel) => {
+        const fs = require("fs");
+        const path = require("path");
+
+        const envs = (kernel && kernel.envs) ? kernel.envs : process.env;
+
+        const pick = (...vals) => {
+          for (const v of vals) {
+            if (typeof v === "string" && v.trim()) return v.trim();
+          }
+          return "";
+        };
+
+        const parseEnvLike = (content) => {
+          const out = {};
+          for (const rawLine of String(content || "").split(/\r?\n/)) {
+            const line = rawLine.trim();
+            if (!line || line.startsWith("#")) continue;
+            const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+            if (!m) continue;
+            let value = m[2].trim();
+            if (
+              (value.startsWith('"') && value.endsWith('"')) ||
+              (value.startsWith("'") && value.endsWith("'"))
+            ) {
+              value = value.slice(1, -1);
+            }
+            out[m[1]] = value.trim();
+          }
+          return out;
+        };
+
+        let hfToken = pick(envs.HF_TOKEN, envs.HUGGINGFACE_HUB_TOKEN);
+        let civitaiApiKey = pick(envs.CIVITAI_API_KEY);
+        let tokenSource = hfToken ? "ENVIRONMENT" : "";
+
+        const candidateFiles = [
+          envs.HF_TOKEN_FILE || "",
+          path.resolve(req.cwd, ".envhftoken"),
+          path.resolve(req.cwd, ".hftoken"),
+          "/Users/charafchnioune/Desktop/ltx-2-mlx/.envhftoken",
+          path.resolve(req.cwd, "ENVIRONMENT.local"),
+        ].filter(Boolean);
+
+        for (const candidate of candidateFiles) {
+          if (hfToken && civitaiApiKey) break;
+          try {
+            if (!fs.existsSync(candidate)) continue;
+            const raw = fs.readFileSync(candidate, "utf8");
+            const parsed = parseEnvLike(raw);
+            if (!hfToken) {
+              hfToken = pick(
+                parsed.HF_TOKEN,
+                parsed.HUGGINGFACE_HUB_TOKEN,
+                parsed.HUGGINGFACE_TOKEN
+              );
+              if (!hfToken && !raw.includes("=") && raw.trim()) {
+                hfToken = raw.trim();
+              }
+              if (hfToken) tokenSource = candidate;
+            }
+            if (!civitaiApiKey) {
+              civitaiApiKey = pick(parsed.CIVITAI_API_KEY);
+            }
+          } catch {
+            // ignore unreadable token files
+          }
+        }
+
+        if (hfToken) {
+          ondata({ raw: `\nHF token loaded from ${tokenSource || "fallback source"}.\n` });
+        } else {
+          ondata({
+            raw: "\nHF token not found (downloads may be slow/rate-limited). Set HF_TOKEN in ENVIRONMENT.\n",
+          });
+        }
+
+        return {
+          hfToken,
+          civitaiApiKey,
+        };
+      },
+    },
+    {
+      method: "local.set",
+      params: {
+        hf_token: "{{input.hfToken || ''}}",
+        civitai_api_key: "{{input.civitaiApiKey || ''}}",
+      },
+    },
+    {
       // Ensure `mlx_video` is importable from `mlx-video/.venv` before we start the API.
       // This avoids the backend falling back to its own venv (and then failing with
       // ModuleNotFoundError: No module named 'mlx_video').
@@ -105,13 +197,16 @@ module.exports = {
           HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
           HF_HUB_CACHE: "{{path.resolve(cwd, 'cache', 'HF_HOME', 'hub')}}",
           // Pass tokens through to the backend + generator subprocesses.
-          HF_TOKEN: "{{envs.HF_TOKEN || ''}}",
-          HUGGINGFACE_HUB_TOKEN: "{{envs.HF_TOKEN || ''}}",
-          CIVITAI_API_KEY: "{{envs.CIVITAI_API_KEY || ''}}",
+          HF_TOKEN: "{{local.hf_token || envs.HF_TOKEN || envs.HUGGINGFACE_HUB_TOKEN || ''}}",
+          HUGGINGFACE_HUB_TOKEN: "{{local.hf_token || envs.HUGGINGFACE_HUB_TOKEN || envs.HF_TOKEN || ''}}",
+          CIVITAI_API_KEY: "{{local.civitai_api_key || envs.CIVITAI_API_KEY || ''}}",
           // Hugging Face Hub download tuning (optional).
           HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
           HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
           LTX_NO_DOWNLOAD_PROGRESS: "{{envs.LTX_NO_DOWNLOAD_PROGRESS || '0'}}",
+          // Prefer the selected 4/8-bit repos directly to avoid huge first-run BF16 downloads.
+          LTX_USE_PREQUANT: "{{envs.LTX_USE_PREQUANT || '1'}}",
+          LTX_FORCE_RUNTIME_QUANT: "{{envs.LTX_FORCE_RUNTIME_QUANT || '0'}}",
           // The "streaming mp4" path uses OpenCV VideoWriter which is flaky on macOS
           // (can produce corrupted/static frames). We keep stream mode for preview/progress,
           // but default to final ffmpeg encoding for correctness.
