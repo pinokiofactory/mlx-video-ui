@@ -1,6 +1,12 @@
 module.exports = {
-  daemon: true,
   run: [
+    {
+      // Stop previously running servers so we can restart cleanly.
+      method: "script.stop",
+      params: {
+        uri: ["backend.js", "frontend.js"],
+      },
+    },
     {
       // Prefer the usual dev ports, but fall back to a truly free port if they're taken.
       method: async (req, ondata, kernel) => {
@@ -215,81 +221,31 @@ module.exports = {
       },
     },
     {
-      method: "shell.run",
+      method: "script.start",
       params: {
-        path: "app/backend",
-        venv: ".venv",
-        env: {
-          PYTHONUNBUFFERED: "1",
-          // Ensure ffmpeg/ffprobe are available for muxing audio and higher-quality encoding.
-          // (Pinokio conda + venv activation may drop Homebrew from PATH.)
-          // Pinokio expects PATH as an array and joins it internally.
-          PATH: [
-            "{{envs.PATH || ''}}",
-            "/opt/homebrew/bin",
-            "/usr/local/bin",
-          ],
-          // Force all HF downloads/caches into this Pinokio project folder so installs are
-          // deterministic and we don't accidentally pick up incomplete global caches.
-          HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
-          HF_HUB_CACHE: "{{path.resolve(cwd, 'cache', 'HF_HOME', 'hub')}}",
-          // Pass tokens through to the backend + generator subprocesses.
-          HF_TOKEN: "{{local.hf_token || envs.HF_TOKEN || envs.HUGGINGFACE_HUB_TOKEN || ''}}",
-          HUGGINGFACE_HUB_TOKEN: "{{local.hf_token || envs.HUGGINGFACE_HUB_TOKEN || envs.HF_TOKEN || ''}}",
-          CIVITAI_API_KEY: "{{local.civitai_api_key || envs.CIVITAI_API_KEY || ''}}",
-          // Hugging Face Hub download tuning (optional).
-          HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
-          HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
-          LTX_NO_DOWNLOAD_PROGRESS: "{{envs.LTX_NO_DOWNLOAD_PROGRESS || '0'}}",
-          // Default to runtime quantization for stability (avoids broken pre-quant snapshots).
-          // To force pre-quant snapshots, set BOTH:
-          //   LTX_USE_PREQUANT=1
-          //   LTX_ALLOW_UNSAFE_PREQUANT=1
-          LTX_USE_PREQUANT: "{{envs.LTX_USE_PREQUANT || '0'}}",
-          LTX_ALLOW_UNSAFE_PREQUANT: "{{envs.LTX_ALLOW_UNSAFE_PREQUANT || '0'}}",
-          LTX_FORCE_RUNTIME_QUANT: "{{envs.LTX_FORCE_RUNTIME_QUANT || '1'}}",
-          // The "streaming mp4" path uses OpenCV VideoWriter which is flaky on macOS
-          // (can produce corrupted/static frames). We keep stream mode for preview/progress,
-          // but default to final ffmpeg encoding for correctness.
-          MLX_VIDEO_STREAM_MP4: "{{envs.MLX_VIDEO_STREAM_MP4 || '0'}}",
+        uri: "backend.js",
+        params: {
+          backend_port: "{{local.backend_port}}",
+          hf_token: "{{local.hf_token || ''}}",
+          civitai_api_key: "{{local.civitai_api_key || ''}}",
         },
-        message: "uvicorn main:app --host 127.0.0.1 --port {{local.backend_port}}",
-        on: [{
-          // Wait until the server is bound and serving.
-          event: "/Uvicorn running on (http:\\/\\/\\S+)/",
-          done: true
-        }]
-      }
-    },
-    {
-      method: "local.set",
-      params: {
-        // Prefer the actual URL printed by uvicorn (capture group), but keep the computed fallback.
-        backend_url: "{{(input.event && input.event[1]) ? input.event[1] : local.backend_url}}",
       },
     },
     {
-      method: "shell.run",
+      method: "script.start",
       params: {
-        path: "app/frontend",
-        env: {
-          NEXT_PUBLIC_API_BASE: "{{local.backend_url}}",
+        uri: "frontend.js",
+        params: {
+          frontend_port: "{{local.frontend_port}}",
+          backend_url: "{{local.backend_url}}",
         },
-        message: "npm run dev -- -p {{local.frontend_port}} -H 127.0.0.1",
-        on: [{
-          // Next prints a URL we can open; capture only the clean URL (no trailing punctuation).
-          event: "/(http:\\/\\/(?:127\\.0\\.0\\.1|localhost):\\d+)\\b/",
-          done: true
-        }]
-      }
+      },
     },
     {
-      method: "local.set",
+      method: "log",
       params: {
-        // Build UI URL directly from the selected port (avoid fragile parsing/regex).
-        ui_url: "{{'http://127.0.0.1:' + local.frontend_port}}",
-        url: "{{'http://127.0.0.1:' + local.frontend_port}}",
-      }
+        raw: "Started backend + frontend. Open the Frontend tab to use the UI.",
+      },
     },
   ]
 }
