@@ -138,6 +138,42 @@ module.exports = {
       },
     },
     {
+      // Keep the embedded repos up to date unless explicitly disabled.
+      // Pinokio users often click "Start" without running "Update" first, which can leave
+      // them on a generator build that produces "snow/static" outputs.
+      when: "{{envs.PINOKIO_AUTO_UPDATE != '0'}}",
+      method: "shell.run",
+      params: {
+        message: "echo \"PINOKIO_AUTO_UPDATE enabled\"",
+      },
+    },
+    {
+      when: "{{envs.PINOKIO_AUTO_UPDATE != '0' && exists('mlx-video')}}",
+      method: "shell.run",
+      params: {
+        path: "mlx-video",
+        message: [
+          "git fetch origin",
+          "git checkout main",
+          "git pull --ff-only || git pull",
+          "echo \"mlx-video @ $(git rev-parse --short HEAD)\"",
+        ],
+      },
+    },
+    {
+      when: "{{envs.PINOKIO_AUTO_UPDATE != '0' && exists('app')}}",
+      method: "shell.run",
+      params: {
+        path: "app",
+        message: [
+          "git fetch origin",
+          "git checkout main",
+          "git pull --ff-only || git pull",
+          "echo \"app @ $(git rev-parse --short HEAD)\"",
+        ],
+      },
+    },
+    {
       // Ensure `mlx_video` is importable from `mlx-video/.venv` before we start the API.
       // This avoids the backend falling back to its own venv (and then failing with
       // ModuleNotFoundError: No module named 'mlx_video').
@@ -187,11 +223,7 @@ module.exports = {
           PYTHONUNBUFFERED: "1",
           // Ensure ffmpeg/ffprobe are available for muxing audio and higher-quality encoding.
           // (Pinokio conda + venv activation may drop Homebrew from PATH.)
-          PATH: [
-            "{{envs.PATH || ''}}",
-            "/opt/homebrew/bin",
-            "/usr/local/bin",
-          ],
+          PATH: "{{(envs.PATH || '') + (platform === 'win32' ? ';' : ':') + '/opt/homebrew/bin' + (platform === 'win32' ? ';' : ':') + '/usr/local/bin'}}",
           // Force all HF downloads/caches into this Pinokio project folder so installs are
           // deterministic and we don't accidentally pick up incomplete global caches.
           HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
@@ -204,9 +236,13 @@ module.exports = {
           HF_XET_HIGH_PERFORMANCE: "{{envs.HF_XET_HIGH_PERFORMANCE || '1'}}",
           HF_HUB_MAX_WORKERS: "{{envs.HF_HUB_MAX_WORKERS || '8'}}",
           LTX_NO_DOWNLOAD_PROGRESS: "{{envs.LTX_NO_DOWNLOAD_PROGRESS || '0'}}",
-          // Prefer the selected 4/8-bit repos directly to avoid huge first-run BF16 downloads.
-          LTX_USE_PREQUANT: "{{envs.LTX_USE_PREQUANT || '1'}}",
-          LTX_FORCE_RUNTIME_QUANT: "{{envs.LTX_FORCE_RUNTIME_QUANT || '0'}}",
+          // Default to runtime quantization for stability (avoids broken pre-quant snapshots).
+          // To force pre-quant snapshots, set BOTH:
+          //   LTX_USE_PREQUANT=1
+          //   LTX_ALLOW_UNSAFE_PREQUANT=1
+          LTX_USE_PREQUANT: "{{envs.LTX_USE_PREQUANT || '0'}}",
+          LTX_ALLOW_UNSAFE_PREQUANT: "{{envs.LTX_ALLOW_UNSAFE_PREQUANT || '0'}}",
+          LTX_FORCE_RUNTIME_QUANT: "{{envs.LTX_FORCE_RUNTIME_QUANT || '1'}}",
           // The "streaming mp4" path uses OpenCV VideoWriter which is flaky on macOS
           // (can produce corrupted/static frames). We keep stream mode for preview/progress,
           // but default to final ffmpeg encoding for correctness.

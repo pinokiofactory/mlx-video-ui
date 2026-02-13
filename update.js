@@ -1,6 +1,13 @@
 module.exports = {
   run: [
     {
+      // Update the Pinokio launcher repo itself (so start.js / scripts stay current).
+      method: "shell.run",
+      params: {
+        message: "git pull"
+      }
+    },
+    {
       when: "{{exists('app')}}",
       method: "shell.run",
       params: {
