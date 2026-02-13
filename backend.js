@@ -18,10 +18,6 @@ module.exports = {
         env: {
           PYTHONUNBUFFERED: "1",
 
-          // PATH is special in Pinokio: it must be an array (Pinokio joins it internally).
-          // We only add extra search paths here; Pinokio will prepend these to its own PATH.
-          PATH: ["/opt/homebrew/bin", "/usr/local/bin"],
-
           // Keep caches within the Pinokio project folder for determinism.
           HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
           HF_HUB_CACHE: "{{path.resolve(cwd, 'cache', 'HF_HOME', 'hub')}}",
@@ -71,4 +67,3 @@ module.exports = {
     },
   ],
 };
-
