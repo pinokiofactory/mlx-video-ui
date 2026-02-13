@@ -223,7 +223,12 @@ module.exports = {
           PYTHONUNBUFFERED: "1",
           // Ensure ffmpeg/ffprobe are available for muxing audio and higher-quality encoding.
           // (Pinokio conda + venv activation may drop Homebrew from PATH.)
-          PATH: "{{(envs.PATH || '') + (platform === 'win32' ? ';' : ':') + '/opt/homebrew/bin' + (platform === 'win32' ? ';' : ':') + '/usr/local/bin'}}",
+          // Pinokio expects PATH as an array and joins it internally.
+          PATH: [
+            "{{envs.PATH || ''}}",
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+          ],
           // Force all HF downloads/caches into this Pinokio project folder so installs are
           // deterministic and we don't accidentally pick up incomplete global caches.
           HF_HOME: "{{path.resolve(cwd, 'cache', 'HF_HOME')}}",
