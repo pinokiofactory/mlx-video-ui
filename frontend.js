@@ -13,6 +13,8 @@ module.exports = {
       params: {
         path: "app/frontend",
         env: {
+          // Pinokio treats PATH specially and expects an array if provided.
+          PATH: "{{(envs.PATH || '').split(path.delimiter).filter(Boolean)}}",
           NEXT_PUBLIC_API_BASE: "{{local.backend_url}}",
         },
         message: "npm run dev -- -p {{local.frontend_port}} -H 127.0.0.1",
@@ -39,4 +41,3 @@ module.exports = {
     },
   ],
 };
-

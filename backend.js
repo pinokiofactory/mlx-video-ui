@@ -16,6 +16,10 @@ module.exports = {
         path: "app/backend",
         venv: ".venv",
         env: {
+          // Pinokio treats PATH specially and expects an array of path entries when
+          // provided via params.env.PATH. Passing a string can crash with:
+          //   TypeError: params.env.PATH.join is not a function
+          PATH: "{{(envs.PATH || '').split(path.delimiter).filter(Boolean)}}",
           PYTHONUNBUFFERED: "1",
 
           // Keep caches within the Pinokio project folder for determinism.
